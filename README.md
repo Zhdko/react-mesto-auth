@@ -36,8 +36,8 @@
 
 ### Ссылки
 
-- [Reposotory URL](https://github.com/Zhdko/mesto-react)
-- [GITpages URL](https://zhdko.github.io/mesto-react/)
+- [Reposotory URL](https://github.com/Zhdko/react-mesto-auth/)
+- [GITpages URL](https://zhdko.github.io/react-mesto-auth/)
 
 ## Мой процесс
 
