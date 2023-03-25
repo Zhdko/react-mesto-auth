@@ -1,28 +1,13 @@
-// export const BASE_URL = "https://auth.nomoreparties.co";
-
-// export const register = (password, email) => {
-//   return fetch(`https://auth.nomoreparties.com/signup`, {
-//     method: "POST",
-//     header: {
-//       Accept: "application/json",
-//       "Content-Type": "aplication/json",
-//     },
-//     body: JSON.stringify({ password, email }),
-//   })
-//     .then((res) => {
-//       try {
-//         if (res.status === 200) {
-//           return res.json();
-//         }
-//       } catch (e) {
-//         return e;
-//       }
-//     })
-//     .then((res) => res)
-//     .catch((err) => console.log(err));
-// };
-
 export const BASE_URL = "https://auth.nomoreparties.co";
+
+function getResponse(res) {
+  if (!res.ok) {
+    return res.json().then((res) => {
+      throw new Error(res.message);
+    });
+  }
+  return res.json();
+}
 
 export const register = (password, email) => {
   return fetch(`${BASE_URL}/signup`, {
@@ -32,20 +17,7 @@ export const register = (password, email) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ password, email }),
-  })
-    .then((res) => {
-      try {
-        if (res.status === 200) {
-          return res.json();
-        }
-      } catch (e) {
-        return e;
-      }
-    })
-    .then((res) => {
-      return res;
-    })
-    .catch((err) => console.log(err));
+  }).then((res) => getResponse(res));
 };
 
 export const authorize = (password, email) => {
@@ -57,14 +29,13 @@ export const authorize = (password, email) => {
     },
     body: JSON.stringify({ password, email }),
   })
-    .then((res) => res.json())
+    .then((res) => getResponse(res))
     .then((data) => {
       if (data.token) {
         localStorage.setItem("jwt", data.token);
         return data;
       }
-    })
-    .catch((err) => console.log(err));
+    });
 };
 
 export const getContent = (token) => {
@@ -75,7 +46,5 @@ export const getContent = (token) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-  })
-    .then((res) => res.json())
-    .then((data) => data);
+  }).then((res) => getResponse(res));
 };

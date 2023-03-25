@@ -1,28 +1,14 @@
 import Header from "./Header";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import useValidation from "../hooks/useValidation";
-import * as auth from "../utils/auth.js";
 
 function Register(props) {
   const { values, errors, handleChange } = useValidation();
-  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     const { password, email } = values;
     e.preventDefault();
-    auth
-      .register(password, email)
-      .then((res) => navigate("/sign-in", { replace: true }))
-      .catch((err) => {
-        props.showInfoPopup({
-          isSuccessfully: false,
-        });
-      })
-      .finally(
-        props.showInfoPopup({
-          isSuccessfully: true,
-        })
-      );
+    props.onRegister(password, email);
   };
 
   return (

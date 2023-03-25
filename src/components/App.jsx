@@ -8,7 +8,6 @@ import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import PopupWithConfirm from "./PopupWithConfirm";
-import PopupWithError from "./PopupWithError";
 import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import Register from "./Register";
@@ -22,8 +21,6 @@ function App() {
   const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = useState(false);
   const [isImagePopupOpen, setIsImagePopupOpen] = useState(false);
   const [isDeleteCardPopupOpen, setIsDeleteCardPopupOpen] = useState(false);
-  const [isErrorPopupOpen, setIsErrorPopupOpen] = useState(false);
-  const [error, setError] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurentUser] = useState({});
@@ -34,15 +31,16 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([api.getUserData(), api.getInitialCards()])
-      .then(([userData, cardsData]) => {
-        setCurentUser(userData);
-        setCards(cardsData);
-      })
-      .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Ошибка получения данных с сервера" });
-      });
+    if (!loggedIn) {
+      Promise.all([api.getUserData(), api.getInitialCards()])
+        .then(([userData, cardsData]) => {
+          setCurentUser(userData);
+          setCards(cardsData);
+        })
+        .catch((err) => {
+          setMessage({ isSuccessfully: true, text: err.message || "Что-то пошло не так! Попробуйте ещё раз." });
+        });
+    }
   }, []);
 
   useEffect(() => {
@@ -95,7 +93,6 @@ function App() {
     setIsEditProfilePopupOpen(false);
     setIsImagePopupOpen(false);
     setIsDeleteCardPopupOpen(false);
-    setIsErrorPopupOpen(false);
     setTimeout(() => setSelectedCard(null), 300);
     setMessage(null);
   }
@@ -106,8 +103,10 @@ function App() {
       .setUserInfo(userInfo)
       .then((res) => setCurentUser(res))
       .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Увы, что-то пошло не по плану" });
+        setMessage({
+          isSuccessfully: true,
+          text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+        });
       })
       .finally(() => {
         setIsLoading(false);
@@ -121,13 +120,54 @@ function App() {
       .editAvatar(avatar)
       .then((res) => setCurentUser(res))
       .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Увы, что-то пошло не по плану" });
+        setMessage({
+          isSuccessfully: true,
+          text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+        });
       })
       .finally(() => {
         setIsLoading(false);
         closeAllPopups();
       });
+  }
+
+  function handleRegister(password, email) {
+    auth
+      .register(password, email)
+      .then((res) => {
+        setMessage({
+          isSuccessfully: true,
+          text: "Вы успешно зарегистрировались!",
+        });
+        setTimeout(() => setMessage(null), 1500);
+        navigate("/sign-in", { replace: true });
+      })
+      .catch((err) => {
+        console.log(err.error);
+        setMessage({
+          isSuccessfully: false,
+          text: err.message || "Что-то пошло не так!",
+        });
+      });
+  }
+
+  function handleLogin(password, email, defaultValues) {
+    auth
+      .authorize(password, email)
+      .then((data) => {
+        if (data.token) {
+          defaultValues();
+          setLoggedIn(true);
+          navigate("/", { replace: true });
+          setEmail(email);
+        }
+      })
+      .catch((err) =>
+        setMessage({
+          isSuccessfully: false,
+          text: err.message || "Что-то пошло не так!",
+        })
+      );
   }
 
   function handleAddPlace(newCard) {
@@ -138,8 +178,10 @@ function App() {
         setCards([newCard, ...cards]);
       })
       .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Не смогли добавить новую карточку :(" });
+        setMessage({
+          isSuccessfully: true,
+          text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+        });
       })
       .finally(() => {
         setIsLoading(false);
@@ -156,8 +198,10 @@ function App() {
         setCards((state) => state.map((c) => (c._id === card._id ? newCard : c)));
       })
       .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Вы старались" });
+        setMessage({
+          isSuccessfully: true,
+          text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+        });
       });
   }
 
@@ -170,8 +214,10 @@ function App() {
         setCards(newCards);
       })
       .catch((err) => {
-        setIsErrorPopupOpen(true);
-        setError({ title: err, text: "Может оно и к лучшему?" });
+        setMessage({
+          isSuccessfully: true,
+          text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+        });
       })
       .finally(() => {
         setIsLoading(false);
@@ -184,24 +230,24 @@ function App() {
     setSelectedCard(card);
   }
 
-  function handleLogin() {
-    setLoggedIn(true);
-  }
-
-  function showInfoPopup(message) {
-    setMessage(message);
-  }
-
   function tokenCheck() {
     const jwt = localStorage.getItem("jwt");
     if (jwt) {
-      auth.getContent(jwt).then((res) => {
-        if (res) {
-          setLoggedIn(true);
-          navigate("/", { replace: true });
-          setEmail(res.data.email);
-        }
-      });
+      auth
+        .getContent(jwt)
+        .then((res) => {
+          if (res) {
+            setLoggedIn(true);
+            navigate("/", { replace: true });
+            setEmail(res.data.email);
+          }
+        })
+        .catch((err) => {
+          setMessage({
+            isSuccessfully: true,
+            text: err.message || "Что-то пошло не так! Попробуйте ещё раз.",
+          });
+        });
     }
   }
 
@@ -231,8 +277,8 @@ function App() {
             }
           />
           <Route path="*" element={loggedIn ? <Navigate to="/" /> : <Navigate to="/sign-in" />} />
-          <Route path="/sign-in" element={<Login handleLogin={handleLogin} showInfoPopup={showInfoPopup} />} />
-          <Route path="/sign-up" element={<Register showInfoPopup={showInfoPopup} />} />
+          <Route path="/sign-in" element={<Login onLogin={handleLogin} />} />
+          <Route path="/sign-up" element={<Register onRegister={handleRegister} />} />
         </Routes>
 
         <EditProfilePopup
@@ -261,7 +307,6 @@ function App() {
           textBtn={isLoading ? "Удаление..." : "Да"}
         />
         <ImagePopup isOpen={isImagePopupOpen} onClose={closeAllPopups} card={selectedCard} />
-        <PopupWithError isOpen={isErrorPopupOpen} onClose={closeAllPopups} error={error} />
         <InfoToolTip message={message} onClose={closeAllPopups} />
       </CurrentUserContext.Provider>
     </>

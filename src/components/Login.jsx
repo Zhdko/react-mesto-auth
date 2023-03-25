@@ -1,31 +1,15 @@
 import Header from "./Header";
 import useValidation from "../hooks/useValidation";
-import { useNavigate } from "react-router-dom";
-import * as auth from "../utils/auth.js";
 
 function Login(props) {
   const { values, errors, handleChange, defaultValues } = useValidation();
-  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!values.email || !values.password) {
       return;
     }
-    auth
-      .authorize(values.password, values.email)
-      .then((data) => {
-        if (data.token) {
-          defaultValues();
-          props.handleLogin();
-          navigate("/", { replace: true });
-        }
-      })
-      .catch((err) =>
-        props.showInfoPopup({
-          isSuccessfully: false,
-        })
-      );
+    props.onLogin(values.password, values.email, defaultValues);
   };
 
   return (

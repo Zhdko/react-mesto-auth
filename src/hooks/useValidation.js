@@ -6,7 +6,6 @@ function useValidation() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    console.log(value);
 
     setValues((values) => ({ ...values, [name]: value }));
     setErrors((errors) => ({ ...errors, [name]: e.target.validationMessage }));
