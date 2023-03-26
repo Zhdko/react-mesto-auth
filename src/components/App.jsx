@@ -31,7 +31,7 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loggedIn) {
+    if (loggedIn) {
       Promise.all([api.getUserData(), api.getInitialCards()])
         .then(([userData, cardsData]) => {
           setCurentUser(userData);
@@ -41,7 +41,7 @@ function App() {
           setMessage({ isSuccessfully: true, text: err.message || "Что-то пошло не так! Попробуйте ещё раз." });
         });
     }
-  }, []);
+  }, [loggedIn]);
 
   useEffect(() => {
     function handleEscClose(evt) {
